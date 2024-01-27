@@ -1,0 +1,13 @@
+echo 'Basic usage:
+
+	asdf install awfy latest:graaljs-jvm
+	asdf list all awfy
+	asdf latest awfy graaljs
+
+The asdf-awfy plugin supports a number of language implementation not yet supported by one of the language plugins.
+It currently only supports binary releases of the corresponding language implementations.
+
+For a full list check:
+
+	asdf list all awfy
+'
