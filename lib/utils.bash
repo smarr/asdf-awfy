@@ -5,7 +5,6 @@ set -euo pipefail
 # TODO: Ensure this is the correct GitHub homepage where releases can be downloaded for awfy.
 GH_REPO="https://github.com/smarr/are-we-fast-yet"
 TOOL_NAME="awfy"
-TOOL_TEST="awfy --version"
 
 fail() {
 	echo -e "asdf-$TOOL_NAME: $*"
@@ -41,7 +40,7 @@ list_github_tags() {
 
 list_all_versions() {
 	list_all_graalpyjvm_versions
-	list_all_graaljs_versions
+	list_all_graaljs_versions "all"
 }
 
 list_all_graalpyjvm_versions() {
@@ -59,105 +58,91 @@ list_all_graaljs_versions() {
 	fi
 
 	local cmd="curl -s"
-	local release_json=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graaljs/releases')
+	local release_json versions
+	release_json=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graaljs/releases')
 
 	if [[ "$type" != "jvm" ]]; then
-		local versions=$(echo "$release_json" |
+		versions=$(echo "$release_json" |
 			jq -r '.[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (any(.assets[]; .name | contains("jvm") | not)) | .tag_name | ltrimstr("graal-")')
 		echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-'
 	fi
 	if [[ "$type" != "native" ]]; then
-		local versions=$(echo "$release_json" |
+
+		versions=$(echo "$release_json" |
 			jq -r '.[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (any(.assets[]; .name | contains("jvm"))) | .tag_name | ltrimstr("graal-")')
 		echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-jvm-'
 	fi
 }
 
-# jq -r '.[] | select (.tag_name == "graal-23.0.0") | .assets[] | select(.name | contains("jvm"))'
-
-release_url_graaljs() {
-	local version="$1"
-	local kernel_name="$2"
-	local arch="$3"
-	local type="$4"
-
-	local cmd="curl -s"
-
-	local filter_for_version='select(.tag_name == "graal-'$version'")'
-	local filter_for_graalnodejs='select(.name | contains("graalnodejs"))'
-
+get_jq_filter_for_os() {
+	local kernel_name
+	kernel_name=$(uname -s | tr '[:upper:]' '[:lower:]')
 	if [[ "$kernel_name" == "darwin" ]]; then
 		kernel_name="macos"
 	fi
+	echo "select(.name | contains(\"$kernel_name\"))"
+}
 
-	local filter_for_os="select(.name | contains(\"$kernel_name\"))"
-
+get_jq_filter_for_arch() {
+	local arch
+	arch=$(uname -m)
 	if [[ "$arch" == "x86_64" ]]; then
 		arch="amd64"
 	elif [[ "$arch" == "arm64" ]]; then
 		arch="aarch64"
 	fi
+	echo "select(.name | contains(\"$arch\"))"
+}
 
+get_jq_filter_for_vm_type() {
+	local type="$1"
 	if [[ "$type" == "jvm" ]]; then
-		local filter_for_type='select(.name | contains("-jvm-"))'
+		echo "select(.name | contains(\"-jvm-\"))"
 	else
-		local filter_for_type='select(.name | contains("-jvm-") | not)'
+		echo "select(.name | contains(\"-jvm-\") | not)"
 	fi
+}
 
-	local filter_for_arch="select(.name | contains(\"$arch\"))"
-	local filter_for_targz='select(.name | contains(".tar.gz"))'
-	local discard_sha256='select(.name | contains(".sha256") | not)'
-	local discard_community_edition='select(.name | contains("-community") | not)'
-
-	local release_json=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graaljs/releases')
-
-	echo "$release_json" |
-		jq -r ".[] | $filter_for_version | .assets[] |
-	 		$filter_for_graalnodejs |
-			$filter_for_os |
-			$filter_for_arch |
-			$filter_for_targz |
-			$filter_for_type |
-			$discard_sha256 |
-			$discard_community_edition | .browser_download_url"
+release_url_graaljs() {
+	local version="$1"
+	local type="$2"
+	local filter_for_graalnodejs='select(.name | contains("graalnodejs"))'
+	release_url_graal_projects "$version" "oracle/graaljs" "$type" "$filter_for_graalnodejs"
 }
 
 release_url_graalpy() {
 	local version="$1"
-	local kernel_name="$2"
-	local arch="$3"
-	local type="$4"
+	local type="$2"
+	release_url_graal_projects "$version" "oracle/graalpython" "$type"
+}
 
-	local cmd="curl -s"
+release_url_graal_projects() {
+	local version="$1"
+	local project="$2"
+	local type="$3"
+
+	if [[ "$#" -eq 3 ]]; then
+		local additional_filter="."
+	else
+		local additional_filter="$4"
+	fi
 
 	local filter_for_version='select(.tag_name == "graal-'$version'")'
+	local filter_for_os filter_for_os filter_for_type
+	filter_for_os=$(get_jq_filter_for_os)
+	filter_for_arch=$(get_jq_filter_for_arch)
+	filter_for_type=$(get_jq_filter_for_vm_type "$type")
 
-	if [[ "$kernel_name" == "darwin" ]]; then
-		kernel_name="macos"
-	fi
-
-	local filter_for_os="select(.name | contains(\"$kernel_name\"))"
-
-	if [[ "$arch" == "x86_64" ]]; then
-		arch="amd64"
-	elif [[ "$arch" == "arm64" ]]; then
-		arch="aarch64"
-	fi
-
-	if [[ "$type" == "jvm" ]]; then
-		local filter_for_type='select(.name | contains("-jvm-"))'
-	else
-		local filter_for_type='select(.name | contains("-jvm-") | not)'
-	fi
-
-	local filter_for_arch="select(.name | contains(\"$arch\"))"
 	local filter_for_targz='select(.name | contains(".tar.gz"))'
 	local discard_sha256='select(.name | contains(".sha256") | not)'
 	local discard_community_edition='select(.name | contains("-community") | not)'
 
-	local release_json=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graalpython/releases')
+	local cmd="curl -s"
+	local release_json
+	release_json=$(eval "$cmd" "https:///api.github.com/repos/$project/releases")
 	echo "$release_json" |
 		jq -r ".[] | $filter_for_version | .assets[] |
+			$additional_filter |
 			$filter_for_os |
 			$filter_for_arch |
 			$filter_for_targz |

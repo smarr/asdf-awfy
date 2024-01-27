@@ -22,22 +22,13 @@ fi
 # determine the download URL based on the version prefix
 if [[ "$ASDF_INSTALL_VERSION" == "graaljs-jvm"* ]]; then
 	version=${ASDF_INSTALL_VERSION#"graaljs-jvm-"}
-	kernel_name=$(uname -s | tr '[:upper:]' '[:lower:]')
-	arch=$(uname -m)
-
-	url=$(release_url_graaljs "$version" "$kernel_name" "$arch" "jvm")
+	url=$(release_url_graaljs "$version" "jvm")
 elif [[ "$ASDF_INSTALL_VERSION" == "graaljs"* ]]; then
 	version=${ASDF_INSTALL_VERSION#"graaljs-"}
-	kernel_name=$(uname -s | tr '[:upper:]' '[:lower:]')
-	arch=$(uname -m)
-
-	url=$(release_url_graaljs "$version" "$kernel_name" "$arch" "native")
+	url=$(release_url_graaljs "$version" "native")
 elif [[ "$ASDF_INSTALL_VERSION" == "graalpy-jvm"* ]]; then
 	version=${ASDF_INSTALL_VERSION#"graalpy-jvm-"}
-	kernel_name=$(uname -s | tr '[:upper:]' '[:lower:]')
-	arch=$(uname -m)
-
-	url=$(release_url_graalpy "$version" "$kernel_name" "$arch" "jvm")
+	url=$(release_url_graalpy "$version" "jvm")
 fi
 
 download_release "$url" "$ASDF_DOWNLOAD_PATH" "$ASDF_INSTALL_VERSION"
