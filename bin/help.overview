@@ -10,4 +10,6 @@ It currently only supports binary releases of the corresponding language impleme
 For a full list check:
 
 	asdf list all awfy
+
+List of dependencies of this plugin:
 '
