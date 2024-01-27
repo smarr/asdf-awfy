@@ -14,13 +14,14 @@ fail() {
 
 check_install_type_is_version() {
 	if [[ "$ASDF_INSTALL_TYPE" != "version" ]]; then
-		echo "The AWFY plugin only supports version based installations"
+		echo "The AWFY plugin only supports version-based installations"
 		echo "because it downloads binary releases."
 		exit 1
 	fi
 }
 
 curl_opts=(-fsSL)
+curl_large_download_opts=(-fSL --progress-bar)
 
 # NOTE: You might want to remove this if awfy is not hosted on GitHub releases.
 if [ -n "${GITHUB_API_TOKEN:-}" ]; then
@@ -46,7 +47,7 @@ list_all_versions() {
 list_all_graalpyjvm_versions() {
 	cmd="curl -s"
 	eval "$cmd" 'https:///api.github.com/repos/oracle/graalpython/releases' |
-		jq -r 'sort_by(.created_at) | .[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (.assets | length > 0) | .tag_name | ltrimstr("graal-")' |
+		jq -r '.[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (.assets | length > 0) | .tag_name | ltrimstr("graal-")' |
 		nl -bn -n ln -w1 -s 'graalpy-jvm-'
 }
 
@@ -57,51 +58,139 @@ list_all_graaljs_versions() {
 		local type="$1"
 	fi
 
-	cmd="curl -s"
-	versions=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graaljs/releases' |
-		jq -r 'sort_by(.created_at) | .[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (.assets | length > 0) | .tag_name | ltrimstr("graal-")')
+	local cmd="curl -s"
+	local release_json=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graaljs/releases')
 
 	if [[ "$type" != "jvm" ]]; then
+		local versions=$(echo "$release_json" |
+			jq -r '.[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (any(.assets[]; .name | contains("jvm") | not)) | .tag_name | ltrimstr("graal-")')
 		echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-'
 	fi
 	if [[ "$type" != "native" ]]; then
+		local versions=$(echo "$release_json" |
+			jq -r '.[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (any(.assets[]; .name | contains("jvm"))) | .tag_name | ltrimstr("graal-")')
 		echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-jvm-'
 	fi
 }
 
+# jq -r '.[] | select (.tag_name == "graal-23.0.0") | .assets[] | select(.name | contains("jvm"))'
+
+release_url_graaljs() {
+	local version="$1"
+	local kernel_name="$2"
+	local arch="$3"
+	local type="$4"
+
+	local cmd="curl -s"
+
+	local filter_for_version='select(.tag_name == "graal-'$version'")'
+	local filter_for_graalnodejs='select(.name | contains("graalnodejs"))'
+
+	if [[ "$kernel_name" == "darwin" ]]; then
+		kernel_name="macos"
+	fi
+
+	local filter_for_os="select(.name | contains(\"$kernel_name\"))"
+
+	if [[ "$arch" == "x86_64" ]]; then
+		arch="amd64"
+	elif [[ "$arch" == "arm64" ]]; then
+		arch="aarch64"
+	fi
+
+	if [[ "$type" == "jvm" ]]; then
+		local filter_for_type='select(.name | contains("-jvm-"))'
+	else
+		local filter_for_type='select(.name | contains("-jvm-") | not)'
+	fi
+
+	local filter_for_arch="select(.name | contains(\"$arch\"))"
+	local filter_for_targz='select(.name | contains(".tar.gz"))'
+	local discard_sha256='select(.name | contains(".sha256") | not)'
+	local discard_community_edition='select(.name | contains("-community") | not)'
+
+	local release_json=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graaljs/releases')
+
+	echo "$release_json" |
+		jq -r ".[] | $filter_for_version | .assets[] |
+	 		$filter_for_graalnodejs |
+			$filter_for_os |
+			$filter_for_arch |
+			$filter_for_targz |
+			$filter_for_type |
+			$discard_sha256 |
+			$discard_community_edition | .browser_download_url"
+}
+
+release_url_graalpy() {
+	local version="$1"
+	local kernel_name="$2"
+	local arch="$3"
+	local type="$4"
+
+	local cmd="curl -s"
+
+	local filter_for_version='select(.tag_name == "graal-'$version'")'
+
+	if [[ "$kernel_name" == "darwin" ]]; then
+		kernel_name="macos"
+	fi
+
+	local filter_for_os="select(.name | contains(\"$kernel_name\"))"
+
+	if [[ "$arch" == "x86_64" ]]; then
+		arch="amd64"
+	elif [[ "$arch" == "arm64" ]]; then
+		arch="aarch64"
+	fi
+
+	if [[ "$type" == "jvm" ]]; then
+		local filter_for_type='select(.name | contains("-jvm-"))'
+	else
+		local filter_for_type='select(.name | contains("-jvm-") | not)'
+	fi
+
+	local filter_for_arch="select(.name | contains(\"$arch\"))"
+	local filter_for_targz='select(.name | contains(".tar.gz"))'
+	local discard_sha256='select(.name | contains(".sha256") | not)'
+	local discard_community_edition='select(.name | contains("-community") | not)'
+
+	local release_json=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graalpython/releases')
+	echo "$release_json" |
+		jq -r ".[] | $filter_for_version | .assets[] |
+			$filter_for_os |
+			$filter_for_arch |
+			$filter_for_targz |
+			$filter_for_type |
+			$discard_sha256 |
+			$discard_community_edition | .browser_download_url"
+}
+
 download_release() {
-	local version filename url
-	version="$1"
-	filename="$2"
+	local url="$1"
+	local filename="$2".tar.gz
+	local version="$3"
 
-	# TODO: Adapt the release URL convention for awfy
-	url="$GH_REPO/archive/v${version}.tar.gz"
-
-	echo "* Downloading $TOOL_NAME release $version..."
-	curl "${curl_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download $url"
+	echo "* Downloading $version..."
+	curl "${curl_large_download_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download $url"
 }
 
 install_version() {
 	local install_type="$1"
 	local version="$2"
-	local install_path="${3%/bin}/bin"
+	local install_path="$3"
+	local download_targz=${ASDF_DOWNLOAD_PATH}.tar.gz
 
 	if [ "$install_type" != "version" ]; then
-		fail "asdf-$TOOL_NAME supports release installs only"
+		fail "The AWFY plugin supports version-based installations only."
 	fi
 
 	(
 		mkdir -p "$install_path"
-		cp -r "$ASDF_DOWNLOAD_PATH"/* "$install_path"
-
-		# TODO: Assert awfy executable exists.
-		local tool_cmd
-		tool_cmd="$(echo "$TOOL_TEST" | cut -d' ' -f1)"
-		test -x "$install_path/$tool_cmd" || fail "Expected $install_path/$tool_cmd to be executable."
-
-		echo "$TOOL_NAME $version installation was successful!"
+		tar -xzf "$download_targz" -C "$install_path" --strip-components=1
+		echo "$version installation was successful!"
 	) || (
 		rm -rf "$install_path"
-		fail "An error occurred while installing $TOOL_NAME $version."
+		fail "An error occurred while installing $version."
 	)
 }
