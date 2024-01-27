@@ -11,15 +11,18 @@ This [asdf](https://asdf-vm.com) plugin provides access to language implementati
 
 # Dependencies
 
+
+- `bash`, `curl`, `jq`, and [POSIX utilities](https://pubs.opengroup.org/onlinepubs/9699919799/idx/utilities.html)
+
 **TODO: adapt this section**
 
-- `bash`, `curl`, `tar`, and [POSIX utilities](https://pubs.opengroup.org/onlinepubs/9699919799/idx/utilities.html).
+- `bash`, `curl`, `tar`.
 - `SOME_ENV_VAR`: set this environment variable in your shell config to load the correct version of tool x.
 
 # Language Implementations
 
-- GraalJS
-- GraalPy JVM
+- GraalJS (native, JVM)
+- GraalPy (JVM)
 
 # Install
 
