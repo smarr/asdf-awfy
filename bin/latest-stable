@@ -8,22 +8,25 @@ plugin_dir=$(dirname "$(dirname "$current_script_path")")
 # shellcheck source=./lib/utils.bash
 . "${plugin_dir}/lib/utils.bash"
 
-curl_opts=(-sI)
+query="$1"
 
-if [ -n "${GITHUB_API_TOKEN:-}" ]; then
-	curl_opts=("${curl_opts[@]}" -H "Authorization: token $GITHUB_API_TOKEN")
+if [[ "$query" == "[0-9]" ]]; then
+	echo "The AWFY plugin requires a version prefix to identify the language implementation that is to be installed."
+	echo "Try for instance 'asdf latest awfy graaljs'."
+	exit 1
 fi
 
-# curl of REPO/releases/latest is expected to be a 302 to another URL
-# when no releases redirect_url="REPO/releases"
-# when there are releases redirect_url="REPO/releases/tag/v<VERSION>"
-redirect_url=$(curl "${curl_opts[@]}" "$GH_REPO/releases/latest" | sed -n -e "s|^location: *||p" | sed -n -e "s|\r||p")
-version=
-printf "redirect url: %s\n" "$redirect_url" >&2
-if [[ "$redirect_url" == "$GH_REPO/releases" ]]; then
-	version="$(list_all_versions | sort_versions | tail -n1 | xargs echo)"
-else
-	version="$(printf "%s\n" "$redirect_url" | sed 's|.*/tag/v\{0,1\}||')"
-fi
-
-printf "%s\n" "$version"
+case $query in
+graaljs-jvm)
+	list_all_graaljs_versions "jvm" | sort_versions | tail -n1
+	exit 0
+	;;
+graaljs)
+	list_all_graaljs_versions "native" | sort_versions | tail -n1
+	exit 0
+	;;
+graalpy-jvm)
+	list_all_graalpyjvm_versions | sort_versions | tail -n1
+	exit 0
+	;;
+esac

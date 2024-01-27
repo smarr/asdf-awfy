@@ -12,6 +12,14 @@ fail() {
 	exit 1
 }
 
+check_install_type_is_version() {
+	if [[ "$ASDF_INSTALL_TYPE" != "version" ]]; then
+		echo "The AWFY plugin only supports version based installations"
+		echo "because it downloads binary releases."
+		exit 1
+	fi
+}
+
 curl_opts=(-fsSL)
 
 # NOTE: You might want to remove this if awfy is not hosted on GitHub releases.
@@ -43,11 +51,17 @@ list_all_graalpyjvm_versions() {
 }
 
 list_all_graaljs_versions() {
+	local type="$1"
 	cmd="curl -s"
 	versions=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graaljs/releases' |
 		jq -r 'sort_by(.created_at) | .[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (.assets | length > 0) | .tag_name | ltrimstr("graal-")')
-	echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-'
-	echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-jvm-'
+
+	if [[ "$type" != "jvm" ]]; then
+		echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-'
+	fi
+	if [[ "$type" != "native" ]]; then
+		echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-jvm-'
+	fi
 }
 
 download_release() {
