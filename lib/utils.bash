@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-# TODO: Ensure this is the correct GitHub homepage where releases can be downloaded for awfy.
 TOOL_NAME="awfy"
 
 fail() {
