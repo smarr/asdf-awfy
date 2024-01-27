@@ -51,7 +51,12 @@ list_all_graalpyjvm_versions() {
 }
 
 list_all_graaljs_versions() {
-	local type="$1"
+	if [ $# -eq 0 ]; then
+		local type="all"
+	else
+		local type="$1"
+	fi
+
 	cmd="curl -s"
 	versions=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graaljs/releases' |
 		jq -r 'sort_by(.created_at) | .[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (.assets | length > 0) | .tag_name | ltrimstr("graal-")')
