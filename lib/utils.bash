@@ -11,6 +11,15 @@ fail() {
 	exit 1
 }
 
+prefix_version_list() {
+	local prefix="$1"
+	local versions="$2"
+	local version
+	for version in $versions; do
+		echo "$prefix$version"
+	done
+}
+
 check_install_type_is_version() {
 	if [[ "$ASDF_INSTALL_TYPE" != "version" ]]; then
 		echo "The AWFY plugin only supports version-based installations"
@@ -44,10 +53,11 @@ list_all_versions() {
 }
 
 list_all_graalpyjvm_versions() {
-	cmd="curl -s"
-	eval "$cmd" 'https:///api.github.com/repos/oracle/graalpython/releases' |
-		jq -r '.[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (.assets | length > 0) | .tag_name | ltrimstr("graal-")' |
-		nl -bn -n ln -w1 -s 'graalpy-jvm-'
+	local cmd="curl -s"
+	local versions
+	versions=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graalpython/releases' |
+		jq -r '.[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (.assets | length > 0) | .tag_name | ltrimstr("graal-")')
+	prefix_version_list 'graalpy-jvm-' "$versions"
 }
 
 list_all_graaljs_versions() {
@@ -64,13 +74,13 @@ list_all_graaljs_versions() {
 	if [[ "$type" != "jvm" ]]; then
 		versions=$(echo "$release_json" |
 			jq -r '.[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (any(.assets[]; .name | contains("jvm") | not)) | .tag_name | ltrimstr("graal-")')
-		echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-'
+		prefix_version_list 'graaljs-' "$versions"
 	fi
 	if [[ "$type" != "native" ]]; then
 
 		versions=$(echo "$release_json" |
 			jq -r '.[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (any(.assets[]; .name | contains("jvm"))) | .tag_name | ltrimstr("graal-")')
-		echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-jvm-'
+		prefix_version_list 'graaljs-jvm-' "$versions"
 	fi
 }
 
