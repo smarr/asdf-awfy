@@ -31,9 +31,23 @@ list_github_tags() {
 }
 
 list_all_versions() {
-	# TODO: Adapt this. By default we simply list the tag names from GitHub releases.
-	# Change this function if awfy has other means of determining installable versions.
-	list_github_tags
+	list_all_graalpyjvm_versions
+	list_all_graaljs_versions
+}
+
+list_all_graalpyjvm_versions() {
+  cmd="curl -s"
+  eval "$cmd" 'https:///api.github.com/repos/oracle/graalpython/releases' | \
+  jq -r 'sort_by(.created_at) | .[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (.assets | length > 0) | .tag_name | ltrimstr("graal-")' | \
+  nl -bn -n ln -w1 -s 'graalpy-jvm-'
+}
+
+list_all_graaljs_versions() {
+  cmd="curl -s"
+  versions=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graaljs/releases' | \
+    jq -r 'sort_by(.created_at) | .[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (.assets | length > 0) | .tag_name | ltrimstr("graal-")')
+  echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-'
+  echo "$versions" | nl -bn -n ln -w1 -s 'graaljs-jvm-'
 }
 
 download_release() {
