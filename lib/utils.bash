@@ -56,7 +56,7 @@ list_all_pharo_versions() {
 list_all_graalpyjvm_versions() {
 	local cmd="curl -s"
 	local versions
-	versions=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graalpython/releases' |
+	versions=$(eval "$cmd" 'https://api.github.com/repos/oracle/graalpython/releases' |
 		jq -r '.[] | select (.prerelease == false) | select (.tag_name | contains("graal-")) | select (.assets | length > 0) | .tag_name | ltrimstr("graal-")')
 	prefix_version_list 'graalpy-jvm-' "$versions"
 }
@@ -70,7 +70,7 @@ list_all_graaljs_versions() {
 
 	local cmd="curl -s"
 	local release_json versions
-	release_json=$(eval "$cmd" 'https:///api.github.com/repos/oracle/graaljs/releases')
+	release_json=$(eval "$cmd" 'https://api.github.com/repos/oracle/graaljs/releases')
 
 	if [[ "$type" != "jvm" ]]; then
 		versions=$(echo "$release_json" |
@@ -161,7 +161,7 @@ release_url_graal_projects() {
 
 	local cmd="curl -s"
 	local release_json
-	release_json=$(eval "$cmd" "https:///api.github.com/repos/$project/releases")
+	release_json=$(eval "$cmd" "https://api.github.com/repos/$project/releases")
 	echo "$release_json" |
 		jq -r ".[] | $filter_for_version | .assets[] |
 			$additional_filter |
