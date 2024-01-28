@@ -29,6 +29,9 @@ elif [[ "$ASDF_INSTALL_VERSION" == "graaljs"* ]]; then
 elif [[ "$ASDF_INSTALL_VERSION" == "graalpy-jvm"* ]]; then
 	version=${ASDF_INSTALL_VERSION#"graalpy-jvm-"}
 	url=$(release_url_graalpy "$version" "jvm")
+elif [[ "$ASDF_INSTALL_VERSION" == "pharo"* ]]; then
+	version=${ASDF_INSTALL_VERSION#"pharo-"}
+	download_pharo "$version"
 fi
 
 download_release "$url" "$ASDF_DOWNLOAD_PATH" "$ASDF_INSTALL_VERSION"

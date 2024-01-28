@@ -42,6 +42,15 @@ sort_versions() {
 list_all_versions() {
 	list_all_graalpyjvm_versions
 	list_all_graaljs_versions "all"
+	list_all_pharo_versions
+}
+
+list_all_pharo_versions() {
+	local cmd="curl -s"
+	local versions_html versions
+	versions_html=$(eval "$cmd" 'https://files.pharo.org/get-files/')
+	versions=$(echo "$versions_html" | grep -o '<a href="[^"]*"' | grep -o -E '[0-9]+' | sort -n)
+	prefix_version_list 'pharo-' "$versions"
 }
 
 list_all_graalpyjvm_versions() {
@@ -118,6 +127,17 @@ release_url_graalpy() {
 	release_url_graal_projects "$version" "oracle/graalpython" "$type"
 }
 
+download_pharo() {
+	local version="$1"
+	echo "Downloading Pharo $version"
+
+	mkdir -p "$ASDF_DOWNLOAD_PATH"
+
+	(cd "$ASDF_DOWNLOAD_PATH" && curl "${curl_opts[@]}" "https://get.pharo.org/$version" | bash)
+	(cd "$ASDF_DOWNLOAD_PATH" && curl "${curl_opts[@]}" "https://get.pharo.org/vm$version" | bash)
+	exit 0
+}
+
 release_url_graal_projects() {
 	local version="$1"
 	local project="$2"
@@ -166,18 +186,22 @@ install_version() {
 	local install_type="$1"
 	local version="$2"
 	local install_path="$3"
-	local download_targz=${ASDF_DOWNLOAD_PATH}.tar.gz
 
 	if [ "$install_type" != "version" ]; then
 		fail "The AWFY plugin supports version-based installations only."
 	fi
 
-	(
-		mkdir -p "$install_path"
-		tar -xzf "$download_targz" -C "$install_path" --strip-components=1
-		echo "$version installation was successful!"
-	) || (
-		rm -rf "$install_path"
-		fail "An error occurred while installing $version."
-	)
+	if [[ "$version" == "pharo"* ]]; then
+		mv "$ASDF_DOWNLOAD_PATH" "$install_path/../"
+	else
+		local download_targz=${ASDF_DOWNLOAD_PATH}.tar.gz
+		(
+			mkdir -p "$install_path"
+			tar -xzf "$download_targz" -C "$install_path" --strip-components=1
+			echo "$version installation was successful!"
+		) || (
+			rm -rf "$install_path"
+			fail "An error occurred while installing $version."
+		)
+	fi
 }

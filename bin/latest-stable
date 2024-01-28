@@ -29,4 +29,8 @@ graalpy-jvm)
 	list_all_graalpyjvm_versions | sort_versions | tail -n1
 	exit 0
 	;;
+pharo)
+	list_all_pharo_versions | sort_versions | tail -n1
+	exit 0
+	;;
 esac
