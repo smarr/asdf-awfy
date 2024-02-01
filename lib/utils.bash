@@ -43,6 +43,7 @@ list_all_versions() {
 	list_all_graalpyjvm_versions
 	list_all_graaljs_versions "all"
 	list_all_pharo_versions
+	list_all_squeak_versions
 }
 
 list_all_pharo_versions() {
@@ -51,6 +52,40 @@ list_all_pharo_versions() {
 	versions_html=$(eval "$cmd" 'https://files.pharo.org/get-files/')
 	versions=$(echo "$versions_html" | grep -o '<a href="[^"]*"' | grep -o -E '[0-9]+' | sort -n)
 	prefix_version_list 'pharo-' "$versions"
+}
+
+list_all_squeak_versions() {
+	local arch_bits
+	if [[ "$(uname -m)" == *"64"* ]]; then
+		arch_bits=64
+	else
+		arch_bits=32
+	fi
+
+	local cmd="curl -s"
+	local versions_html versions release_urls releases
+	versions_html=$(eval "$cmd" 'https://files.squeak.org/')
+	versions=$(echo "$versions_html" |
+		grep -o '<a href="[^"]*"' |
+		grep -o -E '[0-9]+\.[0-9]+/' |
+		grep -o -E '[0-9]+\.[0-9]+')
+
+	release_urls=""
+	for version in $versions; do
+		release_urls="$release_urls https://files.squeak.org/$version/"
+	done
+
+	releases=$(eval "$cmd" "$release_urls" |
+		grep -o '>Squeak[^/]*/' |
+		grep -o 'Squeak[^<]*' |
+		grep "${arch_bits}bit")
+
+	for release in $releases; do
+		local v r
+		v=$(echo "$release" | grep -o -E '[0-9]+\.[0-9]+')
+		r=$(echo "$release" | grep -o -E '[0-9][0-9][0-9]+')
+		echo "squeak-$v-$r"
+	done
 }
 
 list_all_graalpyjvm_versions() {
