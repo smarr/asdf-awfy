@@ -26,3 +26,5 @@ jobs:
         run: |
           ln -s "$(pwd)" ~/.asdf/plugins/awfy
           ~/.asdf/bin/asdf install awfy latest:graaljs
+          ~/.asdf/bin/asdf install awfy latest:pharo
+          ~/.asdf/bin/asdf install awfy latest:squeak
