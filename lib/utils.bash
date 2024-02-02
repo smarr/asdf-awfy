@@ -208,10 +208,12 @@ release_url_squeak() {
 	arch=$(get_squeak_arch)
 
 	release_folder_url="https://files.squeak.org/$v/Squeak$version-${arch_bits}bit/"
+
+	content=$(eval "$cmd" "$release_folder_url")
 	release_file=$(eval "$cmd" "$release_folder_url" |
 		grep -o -E "Squeak$version-${arch_bits}bit-[0-9]+-$os_name-$arch.[^\"<]+\"")
-	release_file=${release_file::-1}
-
+	rf_length=${#release_file}
+	release_file=${release_file:0:rf_length-1}
 	echo "https://files.squeak.org/$v/Squeak$version-${arch_bits}bit/$release_file"
 }
 
