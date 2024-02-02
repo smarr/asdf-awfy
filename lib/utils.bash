@@ -43,6 +43,7 @@ list_all_versions() {
 	list_all_graalpyjvm_versions
 	list_all_graaljs_versions "all"
 	list_all_pharo_versions
+	list_all_squeak_versions
 }
 
 list_all_pharo_versions() {
@@ -51,6 +52,43 @@ list_all_pharo_versions() {
 	versions_html=$(eval "$cmd" 'https://files.pharo.org/get-files/')
 	versions=$(echo "$versions_html" | grep -o '<a href="[^"]*"' | grep -o -E '[0-9]+' | sort -n)
 	prefix_version_list 'pharo-' "$versions"
+}
+
+get_arch_bits() {
+	if [[ "$(uname -m)" == *"64"* ]]; then
+		echo "64"
+	else
+		echo "32"
+	fi
+}
+
+list_all_squeak_versions() {
+	local arch_bits
+	arch_bits=$(get_arch_bits)
+	local cmd="curl -s"
+	local versions_html versions release_urls releases
+	versions_html=$(eval "$cmd" 'https://files.squeak.org/')
+	versions=$(echo "$versions_html" |
+		grep -o '<a href="[^"]*"' |
+		grep -o -E '[0-9]+\.[0-9]+/' |
+		grep -o -E '[0-9]+\.[0-9]+')
+
+	release_urls=""
+	for version in $versions; do
+		release_urls="$release_urls https://files.squeak.org/$version/"
+	done
+
+	releases=$(eval "$cmd" "$release_urls" |
+		grep -o '>Squeak[^/]*/' |
+		grep -o 'Squeak[^<]*' |
+		grep "${arch_bits}bit")
+
+	for release in $releases; do
+		local v r
+		v=$(echo "$release" | grep -o -E '[0-9]+\.[0-9]+')
+		r=$(echo "$release" | grep -o -E '[0-9][0-9][0-9]+')
+		echo "squeak-$v-$r"
+	done
 }
 
 list_all_graalpyjvm_versions() {
@@ -138,6 +176,47 @@ download_pharo() {
 	exit 0
 }
 
+get_squeak_os_name() {
+	local os_name
+	os_name=$(uname -s)
+	if [[ "$os_name" == "Darwin" ]]; then
+		os_name="macOS"
+	fi
+	echo "$os_name"
+}
+
+get_squeak_arch() {
+	local arch
+	arch=$(uname -m)
+	if [[ "$arch" == "x86_64" ]]; then
+		arch="x64"
+	elif [[ "$arch" == "arm64" ]]; then
+		arch="ARMv8"
+	fi
+	echo "$arch"
+}
+
+release_url_squeak() {
+	local version="$1"
+
+	local cmd="curl -s"
+	local arch_bits release_folder_url release_file v r os_name arch
+	v=$(echo "$version" | cut -d- -f1)
+	r=$(echo "$version" | cut -d- -f2)
+	arch_bits=$(get_arch_bits)
+	os_name=$(get_squeak_os_name)
+	arch=$(get_squeak_arch)
+
+	release_folder_url="https://files.squeak.org/$v/Squeak$version-${arch_bits}bit/"
+
+	content=$(eval "$cmd" "$release_folder_url")
+	release_file=$(eval "$cmd" "$release_folder_url" |
+		grep -o -E "Squeak$version-${arch_bits}bit-[0-9]+-$os_name-$arch.[^\"<]+\"")
+	rf_length=${#release_file}
+	release_file=${release_file:0:rf_length-1}
+	echo "https://files.squeak.org/$v/Squeak$version-${arch_bits}bit/$release_file"
+}
+
 release_url_graal_projects() {
 	local version="$1"
 	local project="$2"
@@ -162,6 +241,7 @@ release_url_graal_projects() {
 	local cmd="curl -s"
 	local release_json
 	release_json=$(eval "$cmd" "https://api.github.com/repos/$project/releases")
+
 	echo "$release_json" |
 		jq -r ".[] | $filter_for_version | .assets[] |
 			$additional_filter |
@@ -175,7 +255,7 @@ release_url_graal_projects() {
 
 download_release() {
 	local url="$1"
-	local filename="$2".tar.gz
+	local filename="$2"
 	local version="$3"
 
 	echo "* Downloading $version..."
@@ -195,9 +275,19 @@ install_version() {
 		mv "$ASDF_DOWNLOAD_PATH" "$install_path/../"
 	else
 		local download_targz=${ASDF_DOWNLOAD_PATH}.tar.gz
+		local download_dmg=${ASDF_DOWNLOAD_PATH}.dmg
 		(
 			mkdir -p "$install_path"
-			tar -xzf "$download_targz" -C "$install_path" --strip-components=1
+			if [[ -f "$download_targz" ]]; then
+				tar -xzf "$download_targz" -C "$install_path" --strip-components=1
+			elif [[ -f "$download_dmg" ]]; then
+				local mount_point
+				mount_point=$(hdiutil attach "$download_dmg" | grep Volumes | cut -f3)
+				cp -R "$mount_point"/* "$install_path"
+				hdiutil detach "$mount_point"
+			else
+				fail "Could not find downloaded file for $version"
+			fi
 			echo "$version installation was successful!"
 		) || (
 			rm -rf "$install_path"

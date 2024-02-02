@@ -8,8 +8,10 @@ This [asdf](https://asdf-vm.com) plugin provides access to language implementati
 
 # Language Implementations
 
-- GraalJS (native, JVM)
-- GraalPy (JVM)
+- [GraalJS](https://github.com/oracle/graaljs/) (native, JVM)
+- [GraalPy](https://github.com/oracle/graalpython/) (JVM)
+- [Pharo](https://pharo.org/)
+- [Squeak/Smalltalk](https://squeak.org/)
 
 # Install
 

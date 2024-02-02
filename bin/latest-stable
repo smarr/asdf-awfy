@@ -18,19 +18,24 @@ fi
 
 case $query in
 graaljs-jvm)
-	list_all_graaljs_versions "jvm" | sort_versions | tail -n1
-	exit 0
+	versions=$(list_all_graaljs_versions "jvm")
 	;;
 graaljs)
-	list_all_graaljs_versions "native" | sort_versions | tail -n1
-	exit 0
+	versions=$(list_all_graaljs_versions "native")
 	;;
 graalpy-jvm)
-	list_all_graalpyjvm_versions | sort_versions | tail -n1
-	exit 0
+	versions=$(list_all_graalpyjvm_versions)
 	;;
 pharo)
-	list_all_pharo_versions | sort_versions | tail -n1
-	exit 0
+	versions=$(list_all_pharo_versions)
+	;;
+squeak)
+	versions=$(list_all_squeak_versions)
+	;;
+*)
+	echo "Unknown AWFY implementation: $query"
+	exit 1
 	;;
 esac
+
+echo "$versions" | sort_versions | tail -n1
