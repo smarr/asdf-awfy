@@ -283,7 +283,14 @@ install_version() {
 			elif [[ -f "$download_dmg" ]]; then
 				local mount_point
 				mount_point=$(hdiutil attach "$download_dmg" | grep Volumes | cut -f3)
-				cp -R "$mount_point"/* "$install_path"
+
+				if [[ "$version" == "squeak"* ]]; then
+					# Squeak is distributed as a .app bundle
+					cp -R "$mount_point"/*.app "$install_path/Squeak.app"
+				else
+					cp -R "$mount_point"/* "$install_path"
+				fi
+
 				hdiutil detach "$mount_point"
 			else
 				fail "Could not find downloaded file for $version"
