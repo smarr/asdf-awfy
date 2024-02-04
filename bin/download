@@ -43,6 +43,10 @@ elif [[ "$ASDF_INSTALL_VERSION" == "squeak"* ]]; then
 	else
 		filename="${ASDF_DOWNLOAD_PATH}.dmg"
 	fi
+elif [[ "$ASDF_INSTALL_VERSION" == "pypysrc"* ]]; then
+	version=${ASDF_INSTALL_VERSION#"pypysrc-"}
+	url="https://downloads.python.org/pypy/pypy${version}-src.tar.bz2"
+	filename="${ASDF_DOWNLOAD_PATH}.tar.bz2"
 fi
 
 download_release "$url" "$filename" "$ASDF_INSTALL_VERSION"

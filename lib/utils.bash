@@ -44,6 +44,7 @@ list_all_versions() {
 	list_all_graaljs_versions "all"
 	list_all_pharo_versions
 	list_all_squeak_versions
+	list_all_pypysrc_versions
 }
 
 list_all_pharo_versions() {
@@ -89,6 +90,21 @@ list_all_squeak_versions() {
 		r=$(echo "$release" | grep -o -E '[0-9][0-9][0-9]+')
 		echo "squeak-$v-$r"
 	done
+}
+
+list_all_pypysrc_versions() {
+	local cmd="curl -s --compressed"
+	local versions_html versions
+	versions_html=$(eval "$cmd" 'https://downloads.python.org/pypy/')
+
+	local prefix=">pypy-"         # the - is not included, but fixes off-by-one error
+	local suffix="--src.tar.bz2<" # added extra - to fix off-by-one error
+
+	versions=$(echo "$versions_html" |
+		grep -o -E '>pypy[0-9]+\.[0-9]+[^<]+-src\.tar\.bz2<' |
+		cut -c${#prefix}- |
+		rev | cut -c${#suffix}- | rev)
+	prefix_version_list 'pypysrc-' "$versions"
 }
 
 list_all_graalpyjvm_versions() {
@@ -275,11 +291,14 @@ install_version() {
 		mv "$ASDF_DOWNLOAD_PATH" "$install_path/../"
 	else
 		local download_targz=${ASDF_DOWNLOAD_PATH}.tar.gz
+		local download_tarbz2=${ASDF_DOWNLOAD_PATH}.tar.bz2
 		local download_dmg=${ASDF_DOWNLOAD_PATH}.dmg
 		(
 			mkdir -p "$install_path"
 			if [[ -f "$download_targz" ]]; then
 				tar -xzf "$download_targz" -C "$install_path" --strip-components=1
+			elif [[ -f "$download_tarbz2" ]]; then
+				tar -xjf "$download_tarbz2" -C "$install_path" --strip-components=1
 			elif [[ -f "$download_dmg" ]]; then
 				local mount_point
 				mount_point=$(hdiutil attach "$download_dmg" | grep Volumes | cut -f3)

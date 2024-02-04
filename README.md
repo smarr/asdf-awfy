@@ -11,6 +11,7 @@ This [asdf](https://asdf-vm.com) plugin provides access to language implementati
 - [GraalJS](https://github.com/oracle/graaljs/) (native, JVM)
 - [GraalPy](https://github.com/oracle/graalpython/) (JVM)
 - [Pharo](https://pharo.org/)
+- [PyPy Sources](https://downloads.python.org/pypy/)
 - [Squeak/Smalltalk](https://squeak.org/)
 
 # Install
