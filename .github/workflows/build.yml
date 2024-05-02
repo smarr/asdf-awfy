@@ -1,10 +1,6 @@
 name: Build
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
+on: [push, pull_request]
 
 jobs:
   plugin_test:
@@ -33,3 +29,4 @@ jobs:
           ~/.asdf/bin/asdf install awfy latest:graaljs
           ~/.asdf/bin/asdf install awfy latest:pharo
           ~/.asdf/bin/asdf install awfy latest:squeak
+          ~/.asdf/bin/asdf install awfy latest:oracle-graalvm-ea
