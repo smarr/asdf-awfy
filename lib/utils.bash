@@ -45,6 +45,7 @@ list_all_versions() {
 	list_all_pharo_versions
 	list_all_squeak_versions
 	list_all_pypysrc_versions
+	list_all_oracle_graalvm_ea_versions
 }
 
 list_all_pharo_versions() {
@@ -139,6 +140,14 @@ list_all_graaljs_versions() {
 	fi
 }
 
+list_all_oracle_graalvm_ea_versions() {
+	local cmd="curl -s"
+	release_json=$(eval "$cmd" 'https://api.github.com/repos/graalvm/oracle-graalvm-ea-builds/releases')
+	versions=$(echo "$release_json" |
+		jq -r '.[] | select(any(.assets[]; .name | contains(".sha256") | not)) | select(any(.assets[]; .name | contains(".tar.gz"))) | .tag_name')
+	prefix_version_list 'oracle-graalvm-ea-' "$versions"
+}
+
 get_jq_filter_for_os() {
 	local kernel_name
 	kernel_name=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -163,6 +172,8 @@ get_jq_filter_for_vm_type() {
 	local type="$1"
 	if [[ "$type" == "jvm" ]]; then
 		echo "select(.name | contains(\"-jvm-\"))"
+	elif [[ "$type" == "no-type" ]]; then
+		echo "."
 	else
 		echo "select(.name | contains(\"-jvm-\") | not)"
 	fi
@@ -172,14 +183,20 @@ release_url_graaljs() {
 	local version="$1"
 	local type="$2"
 	local filter_for_graalnodejs='select(.name | contains("graalnodejs"))'
-	release_url_graal_projects "$version" "oracle/graaljs" "$type" "$filter_for_graalnodejs"
+	release_url_graal_projects "graal-$version" "oracle/graaljs" "$type" "$filter_for_graalnodejs"
 }
 
 release_url_graalpy() {
 	local version="$1"
 	local type="$2"
-	release_url_graal_projects "$version" "oracle/graalpython" "$type"
+	release_url_graal_projects "graal-$version" "oracle/graalpython" "$type"
 }
+
+release_url_oracle_graalvm_ea() {
+	local version="$1"
+	release_url_graal_projects "$version" "graalvm/oracle-graalvm-ea-builds" "no-type"
+}
+
 
 download_pharo() {
 	local version="$1"
@@ -244,7 +261,7 @@ release_url_graal_projects() {
 		local additional_filter="$4"
 	fi
 
-	local filter_for_version='select(.tag_name == "graal-'$version'")'
+	local filter_for_version='select(.tag_name == "'$version'")'
 	local filter_for_os filter_for_os filter_for_type
 	filter_for_os=$(get_jq_filter_for_os)
 	filter_for_arch=$(get_jq_filter_for_arch)

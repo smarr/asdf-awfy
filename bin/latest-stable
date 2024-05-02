@@ -32,8 +32,12 @@ pharo)
 squeak)
 	versions=$(list_all_squeak_versions)
 	;;
+oracle-graalvm-ea)
+	versions=$(list_all_oracle_graalvm_ea_versions)
+	;;
 *)
 	echo "Unknown AWFY implementation: $query"
+	echo "Might need to be added in bin/latest-stable"
 	exit 1
 	;;
 esac

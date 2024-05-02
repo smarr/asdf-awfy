@@ -32,6 +32,10 @@ elif [[ "$ASDF_INSTALL_VERSION" == "graalpy-jvm"* ]]; then
 	version=${ASDF_INSTALL_VERSION#"graalpy-jvm-"}
 	url=$(release_url_graalpy "$version" "jvm")
 	filename="${ASDF_DOWNLOAD_PATH}.tar.gz"
+elif [[ "$ASDF_INSTALL_VERSION" == "oracle-graalvm-ea"* ]]; then
+	version=${ASDF_INSTALL_VERSION#"oracle-graalvm-ea-"}
+	url=$(release_url_oracle_graalvm_ea "$version")
+	filename="${ASDF_DOWNLOAD_PATH}.tar.gz"
 elif [[ "$ASDF_INSTALL_VERSION" == "pharo"* ]]; then
 	version=${ASDF_INSTALL_VERSION#"pharo-"}
 	download_pharo "$version"

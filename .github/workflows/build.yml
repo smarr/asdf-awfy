@@ -33,3 +33,4 @@ jobs:
           ~/.asdf/bin/asdf install awfy latest:graaljs
           ~/.asdf/bin/asdf install awfy latest:pharo
           ~/.asdf/bin/asdf install awfy latest:squeak
+          ~/.asdf/bin/asdf install awfy latest:oracle-graalvm-ea
