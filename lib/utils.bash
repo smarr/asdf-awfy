@@ -161,7 +161,7 @@ get_jq_filter_for_arch() {
 	local arch
 	arch=$(uname -m)
 	if [[ "$arch" == "x86_64" ]]; then
-		arch="amd64"
+		arch="$1"
 	elif [[ "$arch" == "arm64" ]]; then
 		arch="aarch64"
 	fi
@@ -261,7 +261,12 @@ release_url_graal_projects() {
 	local filter_for_version='select(.tag_name == "'$version'")'
 	local filter_for_os filter_for_os filter_for_type
 	filter_for_os=$(get_jq_filter_for_os)
-	filter_for_arch=$(get_jq_filter_for_arch)
+
+	if [[ "$project" == "graalvm/oracle-graalvm-ea-builds" ]]; then
+		filter_for_arch=$(get_jq_filter_for_arch "x64")
+	else
+		filter_for_arch=$(get_jq_filter_for_arch "amd64")
+	fi
 	filter_for_type=$(get_jq_filter_for_vm_type "$type")
 
 	local filter_for_targz='select(.name | contains(".tar.gz"))'
