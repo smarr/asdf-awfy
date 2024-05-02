@@ -197,7 +197,6 @@ release_url_oracle_graalvm_ea() {
 	release_url_graal_projects "$version" "graalvm/oracle-graalvm-ea-builds" "no-type"
 }
 
-
 download_pharo() {
 	local version="$1"
 	echo "Downloading Pharo $version"
@@ -241,8 +240,6 @@ release_url_squeak() {
 	arch=$(get_squeak_arch)
 
 	release_folder_url="https://files.squeak.org/$v/Squeak$version-${arch_bits}bit/"
-
-	content=$(eval "$cmd" "$release_folder_url")
 	release_file=$(eval "$cmd" "$release_folder_url" |
 		grep -o -E "Squeak$version-${arch_bits}bit-[0-9]+-$os_name-$arch.[^\"<]+\"")
 	rf_length=${#release_file}
