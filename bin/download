@@ -53,4 +53,11 @@ elif [[ "$ASDF_INSTALL_VERSION" == "pypysrc"* ]]; then
 	filename="${ASDF_DOWNLOAD_PATH}.tar.bz2"
 fi
 
+# when $url is emtpy, output an error message
+if [ -z "$url" ]; then
+	echo "The version $ASDF_INSTALL_VERSION is not supported."
+	echo "No download URL could be determined."
+	exit 1
+fi
+
 download_release "$url" "$filename" "$ASDF_INSTALL_VERSION"
