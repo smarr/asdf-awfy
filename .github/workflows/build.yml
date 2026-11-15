@@ -13,20 +13,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Basic Test
         run: |
           source lib/utils.bash
-          release_url_squeak 6.0-22148
+          url=$(release_url_squeak 6.0-22156)
+          echo "$url"
+          test -n "$url"
 
       - name: Install asdf-vm
-        uses: asdf-vm/actions/install@v3
+        uses: asdf-vm/actions/setup@v4
 
       - name: Install asdf plugin
         run: |
-          ln -s "$(pwd)" ~/.asdf/plugins/awfy
-          ~/.asdf/bin/asdf install awfy latest:graaljs
-          ~/.asdf/bin/asdf install awfy latest:pharo
-          ~/.asdf/bin/asdf install awfy latest:squeak
-          ~/.asdf/bin/asdf install awfy latest:oracle-graalvm-ea
+          plugins_dir="${ASDF_DATA_DIR:-$HOME/.asdf}/plugins"
+          mkdir -p "$plugins_dir"
+          ln -s "$(pwd)" "$plugins_dir/awfy"
+          asdf install awfy latest:graaljs
+          asdf install awfy latest:pharo
+          asdf install awfy latest:squeak
+          asdf install awfy latest:oracle-graalvm-ea
