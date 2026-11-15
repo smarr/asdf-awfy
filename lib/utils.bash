@@ -183,7 +183,15 @@ release_url_graaljs() {
 	local version="$1"
 	local type="$2"
 	local filter_for_graalnodejs='select(.name | contains("graalnodejs"))'
-	release_url_graal_projects "graal-$version" "oracle/graaljs" "$type" "$filter_for_graalnodejs"
+	local url
+	url=$(release_url_graal_projects "graal-$version" "oracle/graaljs" "$type" "$filter_for_graalnodejs")
+
+	# graalnodejs builds may not be available, fall back to standalone graaljs
+	if [[ -z "$url" ]]; then
+		local filter_for_graaljs='select(.name | startswith("graaljs-"))'
+		url=$(release_url_graal_projects "graal-$version" "oracle/graaljs" "$type" "$filter_for_graaljs")
+	fi
+	echo "$url"
 }
 
 release_url_graalpy() {
