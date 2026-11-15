@@ -222,7 +222,7 @@ get_squeak_arch() {
 	arch=$(uname -m)
 	if [[ "$arch" == "x86_64" ]]; then
 		arch="x64"
-	elif [[ "$arch" == "arm64" ]]; then
+	elif [[ "$arch" == "arm64" || "$arch" == "aarch64" ]]; then
 		arch="ARMv8"
 	fi
 	echo "$arch"
@@ -241,9 +241,12 @@ release_url_squeak() {
 
 	release_folder_url="https://files.squeak.org/$v/Squeak$version-${arch_bits}bit/"
 	release_file=$(eval "$cmd" "$release_folder_url" |
-		grep -o -E "Squeak$version-${arch_bits}bit-[0-9]+-$os_name-$arch.[^\"<]+\"")
-	rf_length=${#release_file}
-	release_file=${release_file:0:rf_length-1}
+		grep -o -E "Squeak$version-${arch_bits}bit-[0-9]+-$os_name-$arch\.[^\"<]+\"" |
+		head -n 1 || true)
+	if [[ -z "$release_file" ]]; then
+		return
+	fi
+	release_file=${release_file%\"}
 	echo "https://files.squeak.org/$v/Squeak$version-${arch_bits}bit/$release_file"
 }
 
